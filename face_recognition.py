@@ -5,7 +5,7 @@ import numpy as np
 from insightface.app import FaceAnalysis
 import os
 import logging
-
+import torch
 ctx_id = int(os.environ.get("INSIGHTFACE_CTX_ID", "-1"))
 app = FaceAnalysis(name="buffalo_l")
 try:
@@ -21,7 +21,10 @@ known_encodings = db["encodings"]
 known_names = db["names"]
 
 model = YOLO("yolov8m.pt")
-model.to("cuda")
+if torch.cuda.is_available():
+    model.to("cuda")
+else:
+    model.to("cpu")
 cap = cv2.VideoCapture(0)
 
 track_history = {}
