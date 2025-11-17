@@ -32,3 +32,4 @@ def show_frame(frame,frame_list):
     for f in frame_list:
         f.pack_forget()
     frame.pack(fill="both", expand=True)
+
