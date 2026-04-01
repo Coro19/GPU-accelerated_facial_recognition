@@ -8,12 +8,14 @@ import numpy as np
 import torch
 from ultralytics import YOLO
 from insightface.app import FaceAnalysis
+from settings_tab import SettingsManager
 
-# --- Configuration ---
-ENCODINGS_FILE = Path("faces/encodings.pkl")
+# --- Configuration (loaded from settings.json) ---
+settings = SettingsManager()
+ENCODINGS_FILE = settings.db_file
 YOLO_MODEL = "yolov8m.pt"
-DETECTION_SIZE = (640, 640)
-DETECTION_THRESHOLD = 0.1
+DETECTION_SIZE = settings.detection_size
+DETECTION_THRESHOLD = settings.detection_threshold
 RECOGNITION_THRESHOLD = 1.0
 MAX_TRACK_AGE = 30  # Remove tracks not seen for this many frames
 

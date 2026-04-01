@@ -1,12 +1,15 @@
 import os
+import shutil #used for deleting folders with contents
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 from pathlib import Path
 from PIL import Image, ImageTk
 from graphics import add_hover, show_frame
+from settings_tab import SettingsManager
 
-# --- Configuration ---
-KNOWN_FACES_DIR = Path("faces/known")
+# --- Configuration (loaded from settings.json) ---
+settings = SettingsManager()
+KNOWN_FACES_DIR = settings.known_faces_dir
 IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".bmp")
 THUMBNAIL_SIZE = (100, 100)
 
@@ -48,6 +51,32 @@ class PeopleManager:
             except Exception as e:
                 messagebox.showerror("Error", f"Could not delete file: {e}")
 
+    def delete_person(self, person_name):
+        """Delete a person's folder and all their images, then refresh the list."""
+        if messagebox.askyesno("Confirm Delete",
+                               f"Delete {person_name} and all their photos?"):
+            try:
+                shutil.rmtree(KNOWN_FACES_DIR / person_name)
+                self.refresh_people_list()
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not delete folder: {e}")
+
+    def add_person(self):
+        """Prompt for a new person name, create the folder, and refresh the list."""
+        name = simpledialog.askstring("Add Person", "Enter the name for the new person:")
+        if not name or not name.strip():
+            return
+        name = name.strip()
+        person_dir = KNOWN_FACES_DIR / name
+        if person_dir.exists():
+            messagebox.showwarning("Already Exists", f"A folder for '{name}' already exists.")
+            return
+        try:
+            person_dir.mkdir(parents=True)
+            self.refresh_people_list()
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not create folder: {e}")
+
     # --- UI builders ---
 
     def show_person_images(self, person_name):
@@ -86,7 +115,7 @@ class PeopleManager:
         canvas.place(x=30, y=100)
 
         scrollbar = tk.Scrollbar(frame, orient="vertical", command=canvas.yview)
-        scrollbar.place(x=470, y=100, height=350)
+        # Scrollbar is placed later by _configure_scroll only if content overflows
         canvas.configure(yscrollcommand=scrollbar.set)
 
         images_container = tk.Frame(canvas)
@@ -122,9 +151,26 @@ class PeopleManager:
             except Exception:
                 tk.Label(img_frame, text="Error", fg="red").place(x=5, y=50)
 
-        images_container.update_idletasks()
-        canvas.configure(scrollregion=canvas.bbox("all"))
-        canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+        def _configure_scroll():
+            """Set scrollregion and show/hide scrollbar after layout is final."""
+            images_container.update_idletasks()
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            # Show scrollbar only when content overflows the visible area
+            bbox = canvas.bbox("all")
+            if bbox and (bbox[3] - bbox[1]) > canvas.winfo_height():
+                scrollbar.place(x=470, y=100, height=350)
+            else:
+                scrollbar.place_forget()
+
+        # Defer so the canvas geometry is fully resolved
+        canvas.after_idle(lambda: _configure_scroll())
+
+        def _on_mousewheel(event):
+            bbox = canvas.bbox("all")
+            if bbox and (bbox[3] - bbox[1]) > canvas.winfo_height():
+                canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
     def refresh_people_list(self):
         """Refresh the people list frame with current people."""
@@ -152,6 +198,7 @@ class PeopleManager:
                 frame,
                 text="No people found in database.\nAdd folders to faces/known/",
                 font=('Arial', 12)).place(x=130, y=150)
+            add_y = 230
         else:
             for idx, person_name in enumerate(people):
                 num_images = len(self.get_person_images(person_name))
@@ -160,8 +207,21 @@ class PeopleManager:
                     text=f"{person_name} ({num_images} photos)",
                     font=('Arial', 12),
                     command=lambda n=person_name: self.show_person_images(n))
-                btn.place(x=50, y=100 + idx * 50, height=40, width=400)
+                btn.place(x=50, y=100 + idx * 50, height=40, width=360)
                 add_hover(btn, frame)
+
+                del_btn = tk.Button(
+                    frame, text="X", fg="red", font=('Arial', 10, 'bold'),
+                    command=lambda n=person_name: self.delete_person(n))
+                del_btn.place(x=415, y=100 + idx * 50, height=40, width=35)
+                add_hover(del_btn, frame)
+            add_y = 100 + len(people) * 50 + 20
+
+        add_btn = tk.Button(
+            frame, text="+ Add Person", font=('Arial', 12),
+            command=self.add_person)
+        add_btn.place(x=50, y=add_y, height=40, width=400)
+        add_hover(add_btn, frame)
 
     def show_people_list(self):
         """Show the people list frame."""

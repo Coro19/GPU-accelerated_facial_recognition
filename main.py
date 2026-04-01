@@ -1,8 +1,10 @@
 import sys
 import subprocess
 import tkinter as tk
+from tkinter import messagebox
 from graphics import add_hover, show_frame
 from people_manager import PeopleManager
+from settings_tab import SettingsManager, SettingsTab
 
 # --- Helper Functions ---
 def run_option(option):
@@ -12,6 +14,10 @@ def run_option(option):
         subprocess.run([sys.executable, "face_recognition.py"])
     elif option == "2":
         show_frame(database_frame, frame_list)
+def close_app():
+    """Close the application with confirmation."""
+    if messagebox.askokcancel("Quit", "Do you really want to quit?"):
+        root.destroy()
 
 def run_build_encodings():
     """Run the build encodings script."""
@@ -28,8 +34,12 @@ database_frame = tk.Frame(root)
 people_list_frame = tk.Frame(root)
 person_images_frame = tk.Frame(root)
 frame_list = [menu_frame, settings_frame, database_frame, people_list_frame, person_images_frame]
+# --- Settings Manager ---
+settings_mgr = SettingsManager()
 # --- People Manager ---
 people_mgr = PeopleManager(people_list_frame, person_images_frame, database_frame, frame_list)
+# --- Settings Tab ---
+settings_tab = SettingsTab(settings_frame, menu_frame, frame_list, settings_mgr)
 # --- Menu Frame Buttons ---
 button1 = tk.Button(
     menu_frame,
@@ -57,17 +67,10 @@ close_btn = tk.Button(
     text="Close",
     fg="red",
     font=('Arial', 15),
-    command=root.destroy)
+    command=lambda: close_app())
 close_btn.place(x=20, y=430, height=50, width=80)
 add_hover(close_btn, menu_frame)
-# --- Settings Frame Buttons ---
-back_button_settings = tk.Button(
-    settings_frame,
-    text="<",
-    font=('Arial', 20),
-    command=lambda: show_frame(menu_frame, frame_list))
-back_button_settings.place(x=30, y=30, height=50, width=50)
-add_hover(back_button_settings, settings_frame)
+# --- Settings Frame is built by SettingsTab ---
 # --- Database Frame Buttons ---
 back_button_database = tk.Button(
     database_frame,
