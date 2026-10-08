@@ -18,13 +18,14 @@ DETECTION_SIZE = settings.detection_size
 DETECTION_THRESHOLD = settings.detection_threshold
 RECOGNITION_THRESHOLD = 1.0
 MAX_TRACK_AGE = 30  # Remove tracks not seen for this many frames
+REVERIFY_INTERVAL = 15  # Re-run face detection + recognition on known tracks every N frames
 
 # --- Logging Setup ---
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 # --- Face Analysis Setup ---
 ctx_id = int(os.environ.get("INSIGHTFACE_CTX_ID", "0"))
-app = FaceAnalysis(name="buffalo_l")
+app = FaceAnalysis(name="buffalo_l", allowed_modules=["detection", "recognition"])
 try:
     app.prepare(ctx_id=ctx_id, det_size=DETECTION_SIZE, det_thresh=DETECTION_THRESHOLD)
 except Exception as ex:
@@ -82,12 +83,18 @@ while True:
             name = "Unknown"
             face_box_trbl = None
 
-            if track_id in track_history and track_history[track_id]["face_box"] is not None and track_history[track_id]["name"] != "Unknown":
-                data = track_history[track_id]
-                name = data["name"]
-                face_box_trbl = data["face_box"]
-                # Update last seen
-                track_history[track_id]["last_seen"] = frame_count
+            entry = track_history.get(track_id)
+            use_cache = (
+                entry is not None
+                and entry["face_box"] is not None
+                and entry["name"] != "Unknown"
+                and frame_count - entry["last_check"] < REVERIFY_INTERVAL
+            )
+
+            if use_cache:
+                name = entry["name"]
+                face_box_trbl = entry["face_box"]
+                entry["last_seen"] = frame_count
             else:
                 person_crop = frame[y1:y2, x1:x2]
                 if person_crop.size > 0:
@@ -105,11 +112,16 @@ while True:
 
                         if min_dist < RECOGNITION_THRESHOLD:
                             name = known_names[best_match_index]
+                    elif entry is not None and entry["name"] != "Unknown":
+                        # Face not visible during re-check: keep identity until the next check
+                        name = entry["name"]
+                        face_box_trbl = entry["face_box"]
 
                 track_history[track_id] = {
                     "name": name,
                     "face_box": face_box_trbl,
-                    "last_seen": frame_count
+                    "last_seen": frame_count,
+                    "last_check": frame_count
                 }
 
             if face_box_trbl is not None:

@@ -11,7 +11,7 @@ Running face detection on every frame is wasteful, so I track **people** instead
 1. **YOLOv8** detects and tracks every person in the frame, giving each one a stable track ID.
 2. For a person who isn't identified yet, **InsightFace** finds the face inside their crop and computes an ArcFace embedding.
 3. The embedding is compared against the known faces. A match means an L2 distance below `1.0` between normalised embeddings, which is roughly a cosine similarity above 0.5.
-4. Once someone is recognised, the name sticks to their track ID. The expensive face step therefore runs **once per person, not once per frame**.
+4. Once someone is recognised, the name is cached on their track ID and re-checked only every 15 frames. The expensive face step stays rare, while the face box keeps up with movement and a wrong first match gets corrected.
 
 ## The app
 
@@ -41,5 +41,4 @@ Python · OpenCV · PyTorch · YOLOv8 (Ultralytics) · InsightFace · Tkinter
 
 ## What I'd improve next
 
-- Re-check identities from time to time, instead of locking in the first match for a track
 - Make the photo viewer work outside Windows (it currently uses `os.startfile`)

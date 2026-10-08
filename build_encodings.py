@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 # --- Face Analysis Setup ---
 ctx_id = int(os.environ.get("INSIGHTFACE_CTX_ID", "0"))
-app = FaceAnalysis(name="buffalo_l")
+app = FaceAnalysis(name="buffalo_l", allowed_modules=["detection", "recognition"])
 try:
     app.prepare(ctx_id=ctx_id, det_size=DETECTION_SIZE, det_thresh=DETECTION_THRESHOLD)
 except Exception as ex:

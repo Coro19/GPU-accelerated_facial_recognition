@@ -22,7 +22,7 @@ DEFAULT_SETTINGS = {
     "known_faces_dir": "faces/known",
     "db_file": "faces/encodings.pkl",
     "detection_size": 640,
-    "detection_threshold": 0.1,
+    "detection_threshold": 0.5,
 }
 
 # --- Validation Constraints ---
