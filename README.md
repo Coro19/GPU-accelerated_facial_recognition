@@ -33,7 +33,7 @@ python main.py
 2. Click **Build Face Encodings Database**.
 3. Click **Run Face Recognition**.
 
-YOLOv8 uses the GPU automatically. To run InsightFace on the GPU as well, set `INSIGHTFACE_CTX_ID=0` before starting the app.
+Both YOLOv8 and InsightFace run on the GPU when one is available, and fall back to the CPU otherwise. Set `INSIGHTFACE_CTX_ID=-1` to force InsightFace onto the CPU.
 
 ## Built with
 

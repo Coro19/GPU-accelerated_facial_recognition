@@ -20,7 +20,7 @@ IMAGE_PATTERNS = ("*.jpg", "*.jpeg", "*.png", "*.bmp")
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 # --- Face Analysis Setup ---
-ctx_id = int(os.environ.get("INSIGHTFACE_CTX_ID", "-1"))
+ctx_id = int(os.environ.get("INSIGHTFACE_CTX_ID", "0"))
 app = FaceAnalysis(name="buffalo_l")
 try:
     app.prepare(ctx_id=ctx_id, det_size=DETECTION_SIZE, det_thresh=DETECTION_THRESHOLD)
